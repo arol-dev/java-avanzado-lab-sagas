@@ -1,0 +1,21 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: travel-agency
+
+# URLs de los microservicios dependientes. Puedes modificar los puertos si lo deseas.
+services:
+  flight:
+    url: http://localhost:8081
+  hotel:
+    url: http://localhost:8082
+  billing:
+    url: http://localhost:8083
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
