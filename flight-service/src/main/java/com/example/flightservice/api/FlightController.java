@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,4 +40,8 @@ public class FlightController {
     }
 
     // TODO: implementar endpoint de cancelación para soportar compensación en la SAGA
+    @DeleteMapping("/cancel")
+    public ResponseEntity<FlightBookingResponse> cancel(@RequestBody FlightBookingRequest request) {
+        return ResponseEntity.ok(new FlightBookingResponse(request.customerId, false, "Vuelo cancelado"));
+    }
 }
