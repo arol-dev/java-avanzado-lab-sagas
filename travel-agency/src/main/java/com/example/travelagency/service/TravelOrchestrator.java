@@ -3,6 +3,7 @@ package com.example.travelagency.service;
 import com.example.travelagency.client.BillingClient;
 import com.example.travelagency.client.FlightClient;
 import com.example.travelagency.client.HotelClient;
+import com.example.travelagency.dto.BookingDtos;
 import com.example.travelagency.dto.BookingDtos.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +62,9 @@ public class TravelOrchestrator {
             String msg = "Reserva de hotel fallida (TODO: compensar vuelo)";
             log.warn("[SAGA:{}] {}", sagaId, msg);
             // TODO: Llamar a cancelación de vuelo (compensación)
-            return new TravelBookingResponse(sagaId, true, false, false, msg);
+            FlightBookingResponse response = flightClient.cancel(new FlightBookingRequest(
+                    request.customerId(), request.origin(), request.destination(), request.departureDate(), request.returnDate(), request.guests()));
+            return new TravelBookingResponse(sagaId, response.confirmed(), false, false, msg);
         }
 
         // 3) Cobrar (billing)
@@ -70,7 +73,11 @@ public class TravelOrchestrator {
             String msg = "Cobro fallido (TODO: compensar hotel y vuelo)";
             log.warn("[SAGA:{}] {}", sagaId, msg);
             // TODO: Llamar a cancelación de hotel y vuelo (compensaciones)
-            return new TravelBookingResponse(sagaId, true, true, false, msg);
+            FlightBookingResponse flightResponse = flightClient.cancel(new FlightBookingRequest(
+                    request.customerId(), request.origin(), request.destination(), request.departureDate(), request.returnDate(), request.guests()));
+            HotelBookingResponse hotelResponse = hotelClient.cancel(new HotelBookingRequest(
+                    request.customerId(), request.destination(), request.departureDate(), request.returnDate(), request.guests()));
+            return new TravelBookingResponse(sagaId, flightResponse.confirmed(), hotelResponse.confirmed(), false, msg);
         }
 
         String msg = "Reserva y cobro completados";
