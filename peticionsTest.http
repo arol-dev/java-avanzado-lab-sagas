@@ -1,0 +1,13 @@
+POST http://localhost:8080/api/travel/book
+Content-Type: application/json
+X-Fail: 500
+
+{
+  "customerId": "c-123",
+  "origin": "BOG",
+  "destination": "MDE",
+  "departureDate": "2030-04-10",
+  "returnDate": "2030-04-15",
+  "guests": 2,
+  "amount": 500.00
+}

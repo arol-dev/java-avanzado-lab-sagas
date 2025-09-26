@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.UUID;
 
 /**
@@ -27,6 +28,9 @@ import java.util.UUID;
 @Service
 public class TravelOrchestrator {
 
+    //""Persistencia reservas""
+    private final HashMap<String,TravelBookingResponse> mapReservas = new HashMap<>();
+
     private static final Logger log = LoggerFactory.getLogger(TravelOrchestrator.class);
 
     private final FlightClient flightClient;
@@ -39,42 +43,68 @@ public class TravelOrchestrator {
         this.billingClient = billingClient;
     }
 
-    public TravelBookingResponse bookTrip(TravelBookingRequest request) {
-        String sagaId = UUID.randomUUID().toString();
+    public TravelBookingResponse bookTrip(TravelBookingRequest request, String fakeSagaId, String failHeader) {
+        String sagaId = fakeSagaId != null && !fakeSagaId.isEmpty() ? fakeSagaId :  UUID.randomUUID().toString();
         log.info("[SAGA:{}] Iniciando reserva de viaje: {} -> {}", sagaId, request.origin(), request.destination());
 
+        TravelBookingResponse travelResponse =  new TravelBookingResponse(sagaId, false, false, false, "Iniciada reserva", Status.PENDING);
+        mapReservas.put(travelResponse.bookingId(),travelResponse);
+
         // 1) Reservar vuelo
-        FlightBookingResponse flight = flightClient.book(new FlightBookingRequest(
-                request.customerId(), request.origin(), request.destination(), request.departureDate(), request.returnDate(), request.guests()
-        ));
+        FlightBookingRequest flightBookReq = new FlightBookingRequest(
+                request.customerId(), request.origin(), request.destination(), request.departureDate(), request.returnDate(), request.guests());
+        FlightBookingResponse flight = flightClient.book(flightBookReq, sagaId);
         if (flight == null || !flight.confirmed()) {
             String msg = "Reserva de vuelo fallida";
             log.warn("[SAGA:{}] {}", sagaId, msg);
-            return new TravelBookingResponse(sagaId, false, false, false, msg);
+            travelResponse = new TravelBookingResponse(sagaId, false, false, false, msg, Status.CANCELED);
+            mapReservas.put(travelResponse.bookingId(),travelResponse);
+            return travelResponse;
         }
 
         // 2) Reservar hotel
-        HotelBookingResponse hotel = hotelClient.book(new HotelBookingRequest(
-                request.customerId(), request.destination(), request.departureDate(), request.returnDate(), request.guests()
-        ));
+        HotelBookingRequest hotelBookingReq = new HotelBookingRequest(
+                request.customerId(), request.destination(), request.departureDate(), request.returnDate(), request.guests());
+        HotelBookingResponse hotel = hotelClient.book(hotelBookingReq, sagaId, failHeader);
         if (hotel == null || !hotel.confirmed()) {
-            String msg = "Reserva de hotel fallida (TODO: compensar vuelo)";
+            String msg = "Reserva de hotel fallida";
             log.warn("[SAGA:{}] {}", sagaId, msg);
-            // TODO: Llamar a cancelación de vuelo (compensación)
-            return new TravelBookingResponse(sagaId, true, false, false, msg);
+            //Cancelar vuelo
+            flightClient.cancel(flightBookReq);
+            travelResponse = new TravelBookingResponse(sagaId, false, false, false, msg, Status.CANCELED);
+            mapReservas.put(travelResponse.bookingId(),travelResponse);
+            return travelResponse;
         }
 
         // 3) Cobrar (billing)
-        var charge = billingClient.charge(new ChargeRequest(request.customerId(), request.amount(), "Viaje a " + request.destination()));
+        ChargeRequest ChargeReq = new ChargeRequest(request.customerId(), request.amount(), "Viaje a " + request.destination());
+        ChargeResponse charge = billingClient.charge(ChargeReq, sagaId, failHeader);
         if (charge == null || !charge.charged()) {
-            String msg = "Cobro fallido (TODO: compensar hotel y vuelo)";
+            String msg = "Cobro fallido";
             log.warn("[SAGA:{}] {}", sagaId, msg);
-            // TODO: Llamar a cancelación de hotel y vuelo (compensaciones)
-            return new TravelBookingResponse(sagaId, true, true, false, msg);
+            //Cancelar vuelo y hotel
+            flightClient.cancel(flightBookReq);
+            hotelClient.cancel(hotelBookingReq);
+            travelResponse =  new TravelBookingResponse(sagaId, false, false, false, msg, Status.CANCELED);
+            mapReservas.put(travelResponse.bookingId(),travelResponse);
+            return travelResponse;
         }
 
         String msg = "Reserva y cobro completados";
         log.info("[SAGA:{}] {}", sagaId, msg);
-        return new TravelBookingResponse(sagaId, true, true, true, msg);
+        travelResponse =  new TravelBookingResponse(sagaId, true, true, false, msg, Status.CONFIRMED);
+        log.info("[Añadida reserva con id: {}", travelResponse.bookingId());
+        mapReservas.put(travelResponse.bookingId(),travelResponse);
+        return travelResponse;
     }
+
+
+    public TravelBookingResponse get(String id) {
+        if(mapReservas.get(id) != null) {
+            return mapReservas.get(id);
+        } else {
+            return null;
+        }
+    }
+
 }

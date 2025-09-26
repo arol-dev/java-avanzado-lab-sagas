@@ -3,18 +3,22 @@ package com.example.flightservice.api;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/flights")
 public class FlightController {
+
+    private static final Logger log = LoggerFactory.getLogger(FlightController.class);
+    //Mapa para controlar idempotencia
+    private final HashMap<String,FlightBookingResponse> mapSagaIds = new HashMap<>();
 
     public record FlightBookingRequest(
             @NotBlank String customerId,
@@ -32,11 +36,26 @@ public class FlightController {
     ) {}
 
     @PostMapping("/book")
-    public ResponseEntity<FlightBookingResponse> book(@RequestBody FlightBookingRequest request) {
+    public ResponseEntity<FlightBookingResponse> book(@RequestBody FlightBookingRequest request, @RequestHeader(value = "sagaId", required = true) String sagaId) {
         // Simulación simple de reserva de vuelo
+        log.warn("[SAGA :{}] Inicio book para  {}", sagaId, request.customerId);
+        //Control de idempodencia
+        if(mapSagaIds.get(sagaId) != null) {
+            return ResponseEntity.ok(mapSagaIds.get(sagaId));
+        }
         String id = UUID.randomUUID().toString();
-        return ResponseEntity.ok(new FlightBookingResponse(id, true, "Vuelo reservado"));
+        FlightBookingResponse response = new FlightBookingResponse(id, true, "Vuelo reservado");
+
+        //Añadir control de idempodencia
+        mapSagaIds.put(sagaId, response);
+
+        return ResponseEntity.ok(response);
     }
 
-    // TODO: implementar endpoint de cancelación para soportar compensación en la SAGA
+    @PostMapping("/cancel")
+    public ResponseEntity<FlightBookingResponse> cancel(@RequestBody FlightBookingRequest request) {
+        log.info("Peticion de compensacion para FlightController request: {}]", request.customerId);
+        return ResponseEntity.ok(new FlightBookingResponse(request.customerId,false, "Vuelo cancelado"));
+    }
+
 }

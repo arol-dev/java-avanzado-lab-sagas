@@ -4,11 +4,11 @@ import com.example.travelagency.dto.BookingDtos.TravelBookingRequest;
 import com.example.travelagency.dto.BookingDtos.TravelBookingResponse;
 import com.example.travelagency.service.TravelOrchestrator;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/travel")
@@ -25,8 +25,19 @@ public class BookingController {
      * Envía la solicitud a los microservicios (vuelos, hotel) y luego a billing.
      */
     @PostMapping("/book")
-    public ResponseEntity<TravelBookingResponse> book(@RequestBody @Valid TravelBookingRequest request) {
-        var result = orchestrator.bookTrip(request);
+    public ResponseEntity<TravelBookingResponse> book(@RequestBody @Valid TravelBookingRequest request,  @RequestHeader(value = "fakeSagaId", required = false) String fakeSagaId,  @RequestHeader(value = "X-Fail", required = false) String failHeader) {
+        var result = orchestrator.bookTrip(request, fakeSagaId, failHeader);
         return ResponseEntity.ok(result);
+    }
+
+
+    @GetMapping("/id/{id}")
+    public ResponseEntity<Object> get(@PathVariable("id") String id) {
+        var result = orchestrator.get(id);
+        if(result != null) {
+            return ResponseEntity.ok(result);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Reserva no encontrada", "id", id));
+        }
     }
 }

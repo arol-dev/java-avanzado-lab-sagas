@@ -32,13 +32,13 @@ Puedes cambiarlos editando los application.yml de cada módulo.
 ## Cómo ejecutar (paso a paso)
 
 1) Compilar todo:
-    - mvn -q -DskipTests package
+    - `mvn -q -DskipTests package`
 
 2) Levantar los servicios (en terminales separadas):
-    - mvn -pl flight-service spring-boot:run
-    - mvn -pl hotel-service spring-boot:run
-    - mvn -pl billing-service spring-boot:run
-    - mvn -pl travel-agency spring-boot:run
+    - `mvn -pl flight-service spring-boot:run`
+    - `mvn -pl hotel-service spring-boot:run`
+    - `mvn -pl billing-service spring-boot:run`
+    - `mvn -pl travel-agency spring-boot:run`
 
 3) Verificar health:
     - curl http://localhost:8081/actuator/health

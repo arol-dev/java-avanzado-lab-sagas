@@ -19,3 +19,10 @@ management:
     web:
       exposure:
         include: health,info
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 1000     # Tiempo máximo para establecer conexión (en milisegundos)
+        readTimeout: 1000        # Tiempo máximo para leer la respuesta (en milisegundos)
+        retryer: org.springframework.cloud.openfeign.retryer.DefaultRetryer
