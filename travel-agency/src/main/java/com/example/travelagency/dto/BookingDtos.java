@@ -14,6 +14,13 @@ import java.time.LocalDate;
  */
 public class BookingDtos {
 
+    public enum Status {
+        PENDING,
+        CONFIRMED,
+        CANCELED,
+        COMPENSATED
+    }
+
     // -------- Solicitud al orquestador --------
     public record TravelBookingRequest(
             @NotBlank String customerId,
@@ -30,7 +37,8 @@ public class BookingDtos {
             boolean flightConfirmed,
             boolean hotelConfirmed,
             boolean charged,
-            String message
+            String message,
+            Status status
     ) {}
 
     // -------- Flight --------

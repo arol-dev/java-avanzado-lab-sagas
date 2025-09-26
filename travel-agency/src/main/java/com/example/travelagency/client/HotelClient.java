@@ -5,12 +5,15 @@ import com.example.travelagency.dto.BookingDtos.HotelBookingResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 @FeignClient(name = "hotel-service", url = "${services.hotel.url}")
 public interface HotelClient {
 
     @PostMapping("/api/hotels/book")
-    HotelBookingResponse book(@RequestBody HotelBookingRequest request);
+    HotelBookingResponse book(@RequestBody HotelBookingRequest request,  @RequestHeader(value = "sagaId", required = true) String sagaId, @RequestHeader(value = "X-Fail", required = false) String failHeader);
 
-    // TODO: implementar cancelación de hotel para la compensación SAGA
+    @PostMapping("/api/hotels/cancel")
+    HotelBookingResponse cancel(@RequestBody HotelBookingRequest request);
+
 }
