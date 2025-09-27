@@ -11,4 +11,7 @@ public interface BillingClient {
 
     @PostMapping("/api/billing/charge")
     ChargeResponse charge(@RequestBody ChargeRequest request);
+
+    @PostMapping("/api/billing/refund")
+    ChargeResponse refund(@RequestBody ChargeRequest request);
 }

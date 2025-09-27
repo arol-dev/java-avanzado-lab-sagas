@@ -19,3 +19,16 @@ management:
     web:
       exposure:
         include: health,info
+  tracing:
+    sampling:
+      probability: 1.0   # 100% de las peticiones se trazan
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 500
+        readTimeout: 500
+        retryer: com.example.travelagency.config.LoggingRetryer
