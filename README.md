@@ -1,3 +1,102 @@
+Ejercicios SAGA – Pruebas con curl
+1) Compensaciones mínimas
+
+Reserva correcta:
+
+curl -X POST http://localhost:8080/api/travel/book \
+-H "Content-Type: application/json" \
+-d '{
+"customerId": "C1",
+"origin": "MAD",
+"destination": "NYC",
+"departureDate": "2025-10-01",
+"returnDate": "2025-10-10",
+"guests": 2,
+"amount": 500,
+"failFlightFlag": null,
+"failHotelFlag": null,
+"failBillingFlag": null
+}'
+
+
+Fallo en hotel (provoca compensación de vuelo):
+
+curl -X POST http://localhost:8080/api/travel/book \
+-H "Content-Type: application/json" \
+-d '{
+"customerId": "C1",
+"origin": "MAD",
+"destination": "NYC",
+"departureDate": "2025-10-01",
+"returnDate": "2025-10-10",
+"guests": 2,
+"amount": 500,
+"failFlightFlag": null,
+"failHotelFlag": "true",
+"failBillingFlag": null
+}'
+
+
+Fallo en billing (provoca compensación de hotel y vuelo):
+
+curl -X POST http://localhost:8080/api/travel/book \
+-H "Content-Type: application/json" \
+-d '{
+"customerId": "C1",
+"origin": "MAD",
+"destination": "NYC",
+"departureDate": "2025-10-01",
+"returnDate": "2025-10-10",
+"guests": 2,
+"amount": 500,
+"failFlightFlag": null,
+"failHotelFlag": null,
+"failBillingFlag": "true"
+}'
+
+4) Idempotencia
+
+Repetir el mismo sagaId debería devolver el mismo resultado sin duplicar operaciones.
+Ejemplo enviando un sagaId fijo:
+
+curl -X POST http://localhost:8080/api/travel/book \
+-H "Content-Type: application/json" \
+-d '{
+"customerId": "C1",
+"origin": "MAD",
+"destination": "NYC",
+"departureDate": "2025-10-01",
+"returnDate": "2025-10-10",
+"guests": 2,
+"amount": 500,
+"failFlightFlag": null,
+"failHotelFlag": null,
+"failBillingFlag": null,
+"sagaId": "1111-2222-3333"
+}'
+
+5) Consistencia de lectura y estados
+
+Consultar el estado de una reserva concreta (sustituir <ID> por el valor devuelto en la reserva):
+
+curl http://localhost:8080/api/travel/state/<ID>
+
+
+Ejemplo:
+
+curl http://localhost:8080/api/travel/state/da9c640d-43a2-4356-9cd9-ab56c090b16d
+
+6) Observabilidad
+
+Listar servicios registrados en Zipkin:
+
+curl http://localhost:9411/api/v2/services
+
+
+Consultar las trazas recientes (ejemplo con límite 5):
+
+curl "http://localhost:9411/api/v2/traces?limit=5"
+
 # Java Avanzado — Lab: Patrones SAGA con Spring Boot (multi-módulo)
 
 Bienvenido/a al laboratorio para practicar el patrón SAGA coordinando múltiples
@@ -101,11 +200,7 @@ Respuesta esperada (ejemplo):
     - En travel-agency, si falla hotel tras reservar vuelo, llama a cancelar
       vuelo; si falla billing tras hotel, cancela hotel y vuelo.
 
-2) Simulación de fallos controlados
-    - Agrega una bandera (ej. header X-Fail o query param) en
-      flight/hotel/billing para forzar error 409/500.
-    - Verifica que las compensaciones se disparen y dejen el sistema
-      consistente.
+
 
 3) Timeouts y reintentos en Feign
     - En travel-agency agrega propiedades:

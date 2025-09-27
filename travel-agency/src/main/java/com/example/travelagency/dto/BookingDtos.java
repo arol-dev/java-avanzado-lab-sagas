@@ -22,7 +22,10 @@ public class BookingDtos {
             @NotNull @Future LocalDate departureDate,
             @NotNull @Future LocalDate returnDate,
             @Min(1) int guests,
-            @NotNull BigDecimal amount
+            @NotNull BigDecimal amount,
+            String failFlightFlag,
+            String failHotelFlag,
+            String failBillingFlag
     ) {}
 
     public record TravelBookingResponse(
@@ -35,12 +38,19 @@ public class BookingDtos {
 
     // -------- Flight --------
     public record FlightBookingRequest(
+            @NotBlank String sagaId,
             String customerId,
             String origin,
             String destination,
             LocalDate departureDate,
             LocalDate returnDate,
-            int guests
+            int guests,
+            String failFlag
+    ) {}
+
+    public record FlightBookingCancel(
+            @NotBlank String sagaId,
+            String flightId
     ) {}
 
     public record FlightBookingResponse(
@@ -49,13 +59,21 @@ public class BookingDtos {
             String message
     ) {}
 
+    public record FlightCancelResponse(
+            String flightBookingId,
+            boolean confirmed,
+            String message
+    ) {}
+
     // -------- Hotel --------
     public record HotelBookingRequest(
+            @NotBlank String sagaId,
             String customerId,
             String destination,
             LocalDate checkIn,
             LocalDate checkOut,
-            int guests
+            int guests,
+            String failFlag
     ) {}
 
     public record HotelBookingResponse(
@@ -64,11 +82,24 @@ public class BookingDtos {
             String message
     ) {}
 
+    public record HotelCancellationResponse(
+            String hotelBookingId,
+            boolean confirmed,
+            String message
+    ) {}
+    public record HotelBookingCancel(
+            String sagaId,
+            String hotelBookingId
+    ) {}
+
+
     // -------- Billing --------
     public record ChargeRequest(
+            @NotBlank String sagaId,
             String customerId,
             BigDecimal amount,
-            String reason
+            String reason,
+            String failFlag
     ) {}
 
     public record ChargeResponse(
