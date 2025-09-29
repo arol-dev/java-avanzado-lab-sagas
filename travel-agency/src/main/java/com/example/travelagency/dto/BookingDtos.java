@@ -35,6 +35,7 @@ public class BookingDtos {
 
     // -------- Flight --------
     public record FlightBookingRequest(
+            @NotBlank String sagaId,
             String customerId,
             String origin,
             String destination,
@@ -44,6 +45,19 @@ public class BookingDtos {
     ) {}
 
     public record FlightBookingResponse(
+            @NotBlank String sagaId,
+            String flightBookingId,
+            boolean confirmed,
+            String message
+    ) {}
+
+    public record FlightCancelingRequest(
+            @NotBlank String sagaId,
+            @NotBlank String flightBookingId
+    ) {}
+
+    public record FlightCancelingResponse(
+            @NotBlank String sagaId,
             String flightBookingId,
             boolean confirmed,
             String message
@@ -51,6 +65,7 @@ public class BookingDtos {
 
     // -------- Hotel --------
     public record HotelBookingRequest(
+            @NotBlank String sagaId,
             String customerId,
             String destination,
             LocalDate checkIn,
@@ -59,6 +74,19 @@ public class BookingDtos {
     ) {}
 
     public record HotelBookingResponse(
+            @NotBlank String sagaId,
+            String hotelBookingId,
+            boolean confirmed,
+            String message
+    ) {}
+
+    public record HotelCancelingRequest(
+            @NotBlank String sagaId,
+            @NotBlank String hotelBookingId
+    ) {}
+
+    public record HotelCancelingResponse(
+            @NotBlank String sagaId,
             String hotelBookingId,
             boolean confirmed,
             String message
@@ -66,12 +94,14 @@ public class BookingDtos {
 
     // -------- Billing --------
     public record ChargeRequest(
+            @NotBlank String sagaId,
             String customerId,
             BigDecimal amount,
             String reason
     ) {}
 
     public record ChargeResponse(
+            @NotBlank String sagaId,
             String chargeId,
             boolean charged,
             String message
