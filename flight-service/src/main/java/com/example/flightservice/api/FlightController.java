@@ -3,11 +3,11 @@ package com.example.flightservice.api;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -17,6 +17,7 @@ import java.util.UUID;
 public class FlightController {
 
     public record FlightBookingRequest(
+            @NotBlank String sagaId,
             @NotBlank String customerId,
             @NotBlank String origin,
             @NotBlank String destination,
@@ -26,6 +27,19 @@ public class FlightController {
     ) {}
 
     public record FlightBookingResponse(
+            @NotBlank String sagaId,
+            String flightBookingId,
+            boolean confirmed,
+            String message
+    ) {}
+
+    public record FlightCancelingRequest(
+            @NotBlank String sagaId,
+            @NotBlank String flightBookingId
+    ) {}
+
+    public record FlightCancelingResponse(
+            @NotBlank String sagaId,
             String flightBookingId,
             boolean confirmed,
             String message
@@ -35,8 +49,12 @@ public class FlightController {
     public ResponseEntity<FlightBookingResponse> book(@RequestBody FlightBookingRequest request) {
         // Simulación simple de reserva de vuelo
         String id = UUID.randomUUID().toString();
-        return ResponseEntity.ok(new FlightBookingResponse(id, true, "Vuelo reservado"));
+        return ResponseEntity.ok(new FlightBookingResponse(request.sagaId(), id, true, "Vuelo reservado"));
     }
 
-    // TODO: implementar endpoint de cancelación para soportar compensación en la SAGA
+    @PostMapping("/cancel")
+    public ResponseEntity<FlightCancelingResponse> cancel(@RequestBody FlightCancelingRequest request) {
+        return ResponseEntity.ok(new FlightCancelingResponse(request.sagaId(), request.flightBookingId(), true, "Reserva de vuelo cancelada"));
+    }
+
 }
