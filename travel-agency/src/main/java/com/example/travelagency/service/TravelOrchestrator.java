@@ -1,14 +1,21 @@
 package com.example.travelagency.service;
 
-import com.example.travelagency.client.BillingClient;
-import com.example.travelagency.client.FlightClient;
-import com.example.travelagency.client.HotelClient;
-import com.example.travelagency.dto.BookingDtos.*;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
+import com.example.travelagency.client.BillingClient;
+import com.example.travelagency.client.FlightClient;
+import com.example.travelagency.client.HotelClient;
+import com.example.travelagency.dto.BookingDtos.ChargeRequest;
+import com.example.travelagency.dto.BookingDtos.FlightBookingRequest;
+import com.example.travelagency.dto.BookingDtos.FlightBookingResponse;
+import com.example.travelagency.dto.BookingDtos.HotelBookingRequest;
+import com.example.travelagency.dto.BookingDtos.HotelBookingResponse;
+import com.example.travelagency.dto.BookingDtos.TravelBookingRequest;
+import com.example.travelagency.dto.BookingDtos.TravelBookingResponse;
 
 /**
  * Servicio orquestador del patrón SAGA.
@@ -21,7 +28,8 @@ import java.util.UUID;
  * Si falla hotel, TODO: compensar cancelando vuelo.
  * Si falla billing, TODO: compensar cancelando hotel y vuelo.
  *
- * Este servicio usa Feign para llamadas HTTP síncronas (para el lab); en producción
+ * Este servicio usa Feign para llamadas HTTP síncronas (para el lab); en
+ * producción
  * se recomienda colas/eventos y/o timeouts, reintentos, idempotencia, etc.
  */
 @Service
@@ -45,8 +53,8 @@ public class TravelOrchestrator {
 
         // 1) Reservar vuelo
         FlightBookingResponse flight = flightClient.book(new FlightBookingRequest(
-                request.customerId(), request.origin(), request.destination(), request.departureDate(), request.returnDate(), request.guests()
-        ));
+                request.customerId(), request.origin(), request.destination(), request.departureDate(),
+                request.returnDate(), request.guests()));
         if (flight == null || !flight.confirmed()) {
             String msg = "Reserva de vuelo fallida";
             log.warn("[SAGA:{}] {}", sagaId, msg);
@@ -55,21 +63,32 @@ public class TravelOrchestrator {
 
         // 2) Reservar hotel
         HotelBookingResponse hotel = hotelClient.book(new HotelBookingRequest(
-                request.customerId(), request.destination(), request.departureDate(), request.returnDate(), request.guests()
-        ));
+                request.customerId(), request.destination(), request.departureDate(), request.returnDate(),
+                request.guests()));
         if (hotel == null || !hotel.confirmed()) {
-            String msg = "Reserva de hotel fallida (TODO: compensar vuelo)";
+            String msg = "Reserva de hotel fallida (Compensando vuelo)";
             log.warn("[SAGA:{}] {}", sagaId, msg);
-            // TODO: Llamar a cancelación de vuelo (compensación)
+            // Compensación: Cancelar vuelo
+            flightClient.cancel(new FlightBookingRequest(
+                    request.customerId(), request.origin(), request.destination(), request.departureDate(),
+                    request.returnDate(), request.guests()));
             return new TravelBookingResponse(sagaId, true, false, false, msg);
         }
 
         // 3) Cobrar (billing)
-        var charge = billingClient.charge(new ChargeRequest(request.customerId(), request.amount(), "Viaje a " + request.destination()));
+        var charge = billingClient
+                .charge(new ChargeRequest(request.customerId(), request.amount(), "Viaje a " + request.destination()));
         if (charge == null || !charge.charged()) {
-            String msg = "Cobro fallido (TODO: compensar hotel y vuelo)";
+            String msg = "Cobro fallido (Compensando hotel y vuelo)";
             log.warn("[SAGA:{}] {}", sagaId, msg);
-            // TODO: Llamar a cancelación de hotel y vuelo (compensaciones)
+            // Compensación: Cancelar hotel
+            hotelClient.cancel(new HotelBookingRequest(
+                    request.customerId(), request.destination(), request.departureDate(), request.returnDate(),
+                    request.guests()));
+            // Compensación: Cancelar vuelo
+            flightClient.cancel(new FlightBookingRequest(
+                    request.customerId(), request.origin(), request.destination(), request.departureDate(),
+                    request.returnDate(), request.guests()));
             return new TravelBookingResponse(sagaId, true, true, false, msg);
         }
 

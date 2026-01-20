@@ -18,6 +18,8 @@
         <spring-boot.version>3.5.5</spring-boot.version>
         <spring-cloud.version>2025.0.0</spring-cloud.version>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <postgresql.version>42.7.5</postgresql.version>
+        <testcontainers.version>1.20.4</testcontainers.version>
     </properties>
 
     <modules>

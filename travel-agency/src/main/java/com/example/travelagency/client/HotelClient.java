@@ -1,10 +1,11 @@
 package com.example.travelagency.client;
 
-import com.example.travelagency.dto.BookingDtos.HotelBookingRequest;
-import com.example.travelagency.dto.BookingDtos.HotelBookingResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import com.example.travelagency.dto.BookingDtos.HotelBookingRequest;
+import com.example.travelagency.dto.BookingDtos.HotelBookingResponse;
 
 @FeignClient(name = "hotel-service", url = "${services.hotel.url}")
 public interface HotelClient {
@@ -12,5 +13,6 @@ public interface HotelClient {
     @PostMapping("/api/hotels/book")
     HotelBookingResponse book(@RequestBody HotelBookingRequest request);
 
-    // TODO: implementar cancelación de hotel para la compensación SAGA
+    @PostMapping("/api/hotels/cancel")
+    void cancel(@RequestBody HotelBookingRequest request);
 }
